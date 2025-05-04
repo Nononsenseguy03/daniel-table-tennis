@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Table Tennis - Daniel's Challenge</title>
+  <title>Daniel's Table Tennis Challenge</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background-color: #282828;
+      background-color: #222;
       color: white;
     }
     canvas {
       border: 2px solid white;
       background-color: black;
+      margin-top: 20px;
     }
     #winMessage, #loseMessage {
       display: none;
@@ -32,14 +33,15 @@
       height: 30px;
     }
     #instructions {
-      font-size: 20px;
+      font-size: 18px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-<h1>Welcome to the Table Tennis Challenge!</h1>
-<p id="instructions">Use W/S or ↑/↓ to move your paddle. Press Spacebar to smash after 2 hits.</p>
+<h1>Daniel's Table Tennis Challenge</h1>
+<p id="instructions">Use W/S or ↑/↓ to move your paddle. Press Spacebar to smash when the ball is near your paddle.</p>
 
 <canvas id="gameCanvas" width="600" height="400"></canvas>
 <div id="tauntBox"></div>
@@ -66,8 +68,7 @@ let ballSpeedY = 3;
 let playerScore = 0;
 let aiScore = 0;
 let keys = {};
-let hitCount = 0;
-let canSmash = false;
+let smashUsed = false;
 let tauntCooldown = 0;
 
 const taunts = [
@@ -80,20 +81,16 @@ const taunts = [
 ];
 
 function draw() {
-  // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw paddles
   ctx.fillStyle = "white";
   ctx.fillRect(0, playerY, paddleWidth, paddleHeight);
   ctx.fillRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight);
 
-  // Draw ball
   ctx.beginPath();
   ctx.arc(ballX, ballY, 8, 0, Math.PI * 2);
   ctx.fill();
 
-  // Draw score
   ctx.font = "20px Arial";
   ctx.fillText(`You: ${playerScore}`, 50, 30);
   ctx.fillText(`Daniel: ${aiScore}`, canvas.width - 150, 30);
@@ -104,34 +101,25 @@ function update() {
   if (keys['s'] || keys['ArrowDown']) playerY += 6;
   playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
 
-  // Ball movement
   ballX += ballSpeedX;
   ballY += ballSpeedY;
 
-  // Bounce
   if (ballY <= 0 || ballY >= canvas.height) ballSpeedY = -ballSpeedY;
 
-  // Player collision
   if (ballX < paddleWidth && ballY > playerY && ballY < playerY + paddleHeight) {
     ballSpeedX = -ballSpeedX;
-    hitCount++;
-    if (hitCount >= 2) canSmash = true;
+    smashUsed = false;
   }
 
-  // AI paddle
   let aiCenter = aiY + paddleHeight / 2;
   if (aiCenter < ballY - 35) aiY += 5;
   else if (aiCenter > ballY + 35) aiY -= 5;
 
-  // AI collision
   if (ballX > canvas.width - paddleWidth &&
       ballY > aiY && ballY < aiY + paddleHeight) {
     ballSpeedX = -ballSpeedX;
-    hitCount = 0;
-    canSmash = false;
   }
 
-  // Score
   if (ballX < 0) {
     aiScore++;
     resetBall();
@@ -141,7 +129,6 @@ function update() {
     resetBall();
   }
 
-  // Taunts
   if (tauntCooldown <= 0 && Math.random() < 0.005) {
     showTaunt(taunts[Math.floor(Math.random() * taunts.length)]);
     tauntCooldown = 300;
@@ -149,11 +136,6 @@ function update() {
     tauntCooldown--;
   }
 
-  if (canSmash) {
-    showTaunt("Smash Ready! Press Spacebar.");
-  }
-
-  // Win/lose
   if (playerScore >= WINNING_SCORE) {
     document.getElementById("winMessage").style.display = "block";
     clearInterval(gameLoop);
@@ -172,8 +154,7 @@ function resetBall() {
   ballY = canvas.height / 2;
   ballSpeedX = Math.random() < 0.5 ? 5 : -5;
   ballSpeedY = Math.random() * 4 - 2;
-  hitCount = 0;
-  canSmash = false;
+  smashUsed = false;
 }
 
 function showTaunt(text) {
@@ -184,15 +165,20 @@ function showTaunt(text) {
   }, 3000);
 }
 
-// Controls
 window.addEventListener("keydown", (e) => {
   keys[e.key.toLowerCase()] = true;
-  if (e.code === "Space" && canSmash) {
-    ballSpeedX = ballSpeedX > 0 ? 10 : -10;
-    ballSpeedY = ballSpeedY > 0 ? 6 : -6;
-    canSmash = false;
-    hitCount = 0;
-    showTaunt("Whoa! That was a smash.");
+
+  if (e.code === "Space" && !smashUsed) {
+    const smashZone = paddleWidth + 30;
+    if (
+      ballX > paddleWidth && ballX < smashZone &&
+      ballSpeedX > 0 // moving right
+    ) {
+      ballSpeedX *= 3;
+      ballSpeedY *= 3;
+      smashUsed = true;
+      showTaunt("Smashed it!");
+    }
   }
 });
 
@@ -200,7 +186,6 @@ window.addEventListener("keyup", (e) => {
   keys[e.key.toLowerCase()] = false;
 });
 
-// Start game
 const gameLoop = setInterval(update, 1000 / 60);
 </script>
 
