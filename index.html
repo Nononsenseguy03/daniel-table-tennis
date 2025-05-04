@@ -1,194 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Beat Daniel - Table Tennis Showdown</title>
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
-      text-align: center;
-    }
-
-    h1, h2 {
-      margin-top: 20px;
-    }
-
-    canvas {
-      background: #222;
-      display: block;
-      margin: 20px auto;
-    }
-
-    #winMessage, #loseMessage {
-      display: none;
-      font-size: 24px;
-      margin-top: 20px;
-      color: #00ffcc;
-    }
-
-    #danielFace {
-      display: none;
-      width: 200px;
-      border-radius: 10px;
-      margin-top: 20px;
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-    }
-
-    #danielInfo {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-      background: #1c1c1c;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
-    }
-
-    ul {
-      text-align: left;
-      padding-left: 40px;
-    }
-
-    li {
-      margin-bottom: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Tennis - Daniel's Challenge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #282828;
+            color: white;
+        }
+        canvas {
+            border: 2px solid white;
+        }
+        #winMessage, #loseMessage {
+            display: none;
+            color: #4CAF50;
+            font-size: 24px;
+        }
+        #danielFace {
+            display: none;
+            width: 150px;
+            margin-top: 10px;
+        }
+        #tauntBox {
+            color: #f0a;
+            font-style: italic;
+            margin-top: 10px;
+        }
+        #instructions {
+            font-size: 20px;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>🏓 Beat Daniel - The Pro Table Tennis Player</h1>
-  <p>Think you're good? Score 11 before Daniel does. He never loses.</p>
+<h1>Welcome to the Table Tennis Challenge!</h1>
+<p id="instructions">Use W/S or ↑/↓ to control your paddle. Press Spacebar to smash after 2 hits.</p>
 
-  <canvas id="gameCanvas" width="600" height="400"></canvas>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
 
-  <div id="winMessage">🎉 Admit it. You gaslit Rohan in Chameleon. 🎉</div>
-  <div id="loseMessage">😏 Told you. Daniel always wins.</div>
-  <img id="danielFace" src="https://upload.wikimedia.org/wikipedia/commons/4/4e/Table_tennis_player_2016.jpg" alt="Daniel's Face">
+<div id="tauntBox"></div>
 
-  <div id="danielInfo">
-    <h2>How Daniel Will Beat You</h2>
-    <ul>
-      <li>He’s been training since he was four.</li>
-      <li>He plays with his eyes closed for fun.</li>
-      <li>His paddle is made of forged titanium. Yours is plastic.</li>
-      <li>He once beat three players at once… with one hand.</li>
-      <li>He’s faster than your internet connection.</li>
-      <li>He returns smashes with smirks.</li>
-      <li>He’s been undefeated since 2017.</li>
-      <li>He lets you win… if you’re polite.</li>
-      <li>He’s the reason you’re playing alone.</li>
-      <li>And worst of all… he’s humble about it.</li>
-    </ul>
-  </div>
+<div id="winMessage">You got lucky this time!</div>
+<div id="loseMessage">Daniel wins this time! Better luck next time!</div>
+<img id="danielFace" src="https://path/to/daniel_face_image.jpg" alt="Daniel" />
 
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+<script>
+// Game constants
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-    let playerY = 150;
-    let aiY = 150;
-    let ballX = 300, ballY = 200;
-    let ballSpeedX = 4, ballSpeedY = 3;
-    let playerScore = 0, aiScore = 0;
-    const paddleHeight = 80, paddleWidth = 10;
-    const WINNING_SCORE = 11;
+const paddleHeight = 100;
+const paddleWidth = 10;
+const WINNING_SCORE = 11;
+let playerScore = 0;
+let aiScore = 0;
 
-    function drawRect(x, y, w, h, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, w, h);
-    }
+let playerY = canvas.height / 2 - paddleHeight / 2;
+let aiY = canvas.height / 2 - paddleHeight / 2;
+let ballX = canvas.width / 2;
+let ballY = canvas.height / 2;
+let ballSpeedX = 5;
+let ballSpeedY = 3;
 
-    function drawCircle(x, y, r, color) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
+let keys = {};
+let hitCount = 0;
+let canSmash = false;
+let tauntCooldown = 0;
 
-    function drawNet() {
-      for (let i = 0; i < canvas.height; i += 20) {
-        drawRect(canvas.width / 2 - 1, i, 2, 10, 'gray');
-      }
-    }
+const taunts = [
+    "Nice try!",
+    "That all you got?",
+    "You're not even sweating.",
+    "I've beaten tougher opponents blindfolded.",
+    "Almost impressive!",
+    "This is my warmup."
+];
 
-    function draw() {
-      drawRect(0, 0, canvas.width, canvas.height, '#222');
-      drawNet();
-      drawRect(0, playerY, paddleWidth, paddleHeight, 'white');
-      drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, 'white');
-      drawCircle(ballX, ballY, 10, 'white');
-      ctx.font = "20px Arial";
-      ctx.fillText(playerScore, 100, 30);
-      ctx.fillText(aiScore, canvas.width - 120, 30);
-    }
+// Update the game state
+function update() {
+    // Keyboard control
+    if (keys['w'] || keys['ArrowUp']) playerY -= 6;
+    if (keys['s'] || keys['ArrowDown']) playerY += 6;
 
-    function resetBall() {
-      ballX = canvas.width / 2;
-      ballY = canvas.height / 2;
-      ballSpeedX = -ballSpeedX;
-      ballSpeedY = 3 * (Math.random() > 0.5 ? 1 : -1);
-    }
+    // Clamp player position
+    playerY = Math.max(0, Math.min(canvas.height - paddleHeight, playerY));
 
-    function update() {
-      ballX += ballSpeedX;
-      ballY += ballSpeedY;
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
 
-      if (ballY <= 0 || ballY >= canvas.height) {
+    if (ballY <= 0 || ballY >= canvas.height) {
         ballSpeedY = -ballSpeedY;
-      }
+    }
 
-      if (ballX < paddleWidth &&
-          ballY > playerY && ballY < playerY + paddleHeight) {
+    // Player paddle collision
+    if (ballX < paddleWidth && ballY > playerY && ballY < playerY + paddleHeight) {
         ballSpeedX = -ballSpeedX;
-      }
+        hitCount++;
+        if (hitCount >= 2) {
+            canSmash = true;
+        }
+    }
 
-      if (ballX > canvas.width - paddleWidth &&
-          ballY > aiY && ballY < aiY + paddleHeight) {
+    // AI paddle collision
+    if (ballX > canvas.width - paddleWidth &&
+        ballY > aiY && ballY < aiY + paddleHeight) {
         ballSpeedX = -ballSpeedX;
-      }
+        hitCount = 0; // reset hit count if AI hits it
+        canSmash = false;
+    }
 
-      if (ballX < 0) {
+    // Missed shots
+    if (ballX < 0) {
         aiScore++;
         resetBall();
-      }
-      if (ballX > canvas.width) {
+        hitCount = 0;
+        canSmash = false;
+    }
+
+    if (ballX > canvas.width) {
         playerScore++;
         resetBall();
-      }
+        hitCount = 0;
+        canSmash = false;
+    }
 
-      let aiCenter = aiY + paddleHeight / 2;
-      if (aiCenter < ballY - 35) {
-        aiY += 5;
-      } else if (aiCenter > ballY + 35) {
-        aiY -= 5;
-      }
+    // AI movement
+    let aiCenter = aiY + paddleHeight / 2;
+    if (aiCenter < ballY - 35) aiY += 5;
+    else if (aiCenter > ballY + 35) aiY -= 5;
 
-      if (playerScore >= WINNING_SCORE) {
+    // Check win/loss
+    if (playerScore >= WINNING_SCORE) {
         document.getElementById("winMessage").style.display = "block";
         clearInterval(gameInterval);
-      }
+    }
 
-      if (aiScore >= WINNING_SCORE) {
+    if (aiScore >= WINNING_SCORE) {
         document.getElementById("loseMessage").style.display = "block";
         document.getElementById("danielFace").style.display = "block";
         clearInterval(gameInterval);
-      }
     }
 
-    canvas.addEventListener('mousemove', e => {
-      const rect = canvas.getBoundingClientRect();
-      playerY = e.clientY - rect.top - paddleHeight / 2;
-    });
-
-    function gameLoop() {
-      update();
-      draw();
+    // Trigger taunt occasionally
+    if (tauntCooldown <= 0 && Math.random() < 0.005) {
+        const taunt = taunts[Math.floor(Math.random() * taunts.length)];
+        showTaunt(taunt);
+        tauntCooldown = 300; // 5 seconds cooldown
+    } else {
+        tauntCooldown--;
     }
 
-    let gameInterval = setInterval(gameLoop, 1000 / 60);
-  </script>
+    // Smash ready display
+    if (canSmash) {
+        showTaunt("Smash Ready! Press Spacebar.");
+    }
+}
 
+// Reset the ball to center
+function resetBall() {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballSpeedX = Math.random() < 0.5 ? 5 : -5;
+    ballSpeedY = Math.random() * 4 - 2;
+}
+
+// Event listener for key presses
+window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.code === "Space" && canSmash) {
+        ballSpeedX = ballSpeedX > 0 ? 10 : -10;
+        ballSpeedY = ballSpeedY > 0 ? 6 : -6;
+        canSmash = false;
+        hitCount = 0;
+        showTaunt("Whoa! That was a smash.");
+    }
+});
+
+// Event listener for key releases
+window.addEventListener('keyup', e => {
+    keys[e.key.toLowerCase()] = false;
+});
+
+// Show taunt message
+function showTaunt(text) {
+    const tauntBox = document.getElementById('tauntBox');
+    tauntBox.textContent = "Daniel: " + text;
+    setTimeout(() => tauntBox.textContent = '', 3000);
+}
+
+// Game loop
+const gameInterval = setInterval(update, 1000 / 60);
+
+</script>
 </body>
 </html>
