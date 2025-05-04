@@ -111,9 +111,13 @@ function update() {
     smashUsed = false;
   }
 
-  let aiCenter = aiY + paddleHeight / 2;
-  if (aiCenter < ballY - 35) aiY += 5;
-  else if (aiCenter > ballY + 35) aiY -= 5;
+let aiCenter = aiY + paddleHeight / 2;
+const reactionBuffer = 50; // bigger buffer = worse AI
+const aiSpeed = 3; // slower paddle speed
+
+if (aiCenter < ballY - reactionBuffer) aiY += aiSpeed;
+else if (aiCenter > ballY + reactionBuffer) aiY -= aiSpeed;
+
 
   if (ballX > canvas.width - paddleWidth &&
       ballY > aiY && ballY < aiY + paddleHeight) {
